@@ -1,5 +1,5 @@
 PROJECT := otp
-SRC := src/$(PROJECT).c
+SRC := src/$(PROJECT).c src/base32.c
 TARGET := lib/$(PROJECT).so
 CFLAGS := -fPIC -O2 -fomit-frame-pointer -Wall -Werror -pipe -D__STDC_FORMAT_MACROS
 #CFLAGS += -g -DDEBUG -O0

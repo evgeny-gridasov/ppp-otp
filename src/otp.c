@@ -16,6 +16,8 @@
 #include <pppd/chap-new.h>
 #include <pppd/chap_ms.h>
 
+#include "base32.h"
+
 char pppd_version[] = VERSION;
 
 static char *DEFAULT_OTP_SECRETS = "/etc/ppp/otp-secrets";
@@ -44,6 +46,7 @@ typedef struct otp_params otp_params_t;
 struct otp_params {
     const char *method;
     const char *hash;
+    const char *encoding;
     const char *key;
     const char *pin;
     const char *udid;
@@ -242,6 +245,12 @@ split_secret(char *secret, otp_params_t *otp_params)
     }
     *p++ = 0;
 
+    otp_params->encoding = p;
+    if (NULL == (p = strchr(p, ':'))) {
+        return -1;
+    }
+    *p++ = 0;
+
     otp_params->key = p;
     if (NULL == (p = strchr(p, ':'))) {
         return -1;
@@ -282,6 +291,7 @@ otp_chap_verify(char *name, char *ourname, int id,
     const EVP_MD *otp_digest;
     EVP_MD_CTX ctx;
     char secret[256];
+    uint8_t base32[256]; 
     int i, secret_len;
     int ok = 0;
 
@@ -326,7 +336,20 @@ otp_chap_verify(char *name, char *ourname, int id,
         goto done;
     }
 
-    unsigned int key_len = strlen(otp_params.key);
+    unsigned int key_len;
+    const void * otp_key;
+    
+    if (!strcasecmp(otp_params.encoding, "base32")) {
+        key_len = base32_decode((uint8_t *) otp_params.key, base32, sizeof(base32)); 
+        otp_key = base32;
+    } else
+    if (!strcasecmp(otp_params.encoding, "text")) {
+        otp_key = otp_params.key;
+        key_len = strlen(otp_params.key);
+    } else {
+        LOG("Unknown encoding '%s'\n", otp_params.encoding);
+        goto done;
+    }
     unsigned int user_pin = atoi(otp_params.pin);
 
     uint64_t T, Tn;
@@ -349,7 +372,7 @@ otp_chap_verify(char *name, char *ourname, int id,
             Tn = htobe64(T + i);
 
             HMAC_CTX_init(&hmac);
-            HMAC_Init_ex(&hmac, otp_params.key, key_len, otp_digest, NULL);
+            HMAC_Init_ex(&hmac, otp_key, key_len, otp_digest, NULL);
             HMAC_Update(&hmac, (uint8_t *)&Tn, sizeof(Tn));
             HMAC_Final(&hmac, mac, &maclen);
 
@@ -377,7 +400,7 @@ otp_chap_verify(char *name, char *ourname, int id,
             EVP_DigestInit_ex(&ctx, otp_digest, NULL);
             n = sprintf(buf, "%" PRIu64, T + i);
             EVP_DigestUpdate(&ctx, buf, n);
-            EVP_DigestUpdate(&ctx, otp_params.key, key_len);
+            EVP_DigestUpdate(&ctx, otp_key, key_len);
             n = sprintf(buf, "%u", user_pin);
             EVP_DigestUpdate(&ctx, buf, n);
             if (otp_params.udid) {
