@@ -17,6 +17,7 @@
 #include <pppd/chap_ms.h>
 
 #include "base32.h"
+#include "hex.h"
 
 char pppd_version[] = VERSION;
 
@@ -291,7 +292,6 @@ otp_chap_verify(char *name, char *ourname, int id,
     const EVP_MD *otp_digest;
     EVP_MD_CTX ctx;
     char secret[256];
-    uint8_t base32[256]; 
     int i, secret_len;
     int ok = 0;
 
@@ -340,8 +340,14 @@ otp_chap_verify(char *name, char *ourname, int id,
     const void * otp_key;
     
     if (!strcasecmp(otp_params.encoding, "base32")) {
+	uint8_t base32[256];
         key_len = base32_decode((uint8_t *) otp_params.key, base32, sizeof(base32)); 
         otp_key = base32;
+    } else
+    if (!strcasecmp(otp_params.encoding, "hex")) {
+  	uint8_t hex[256];
+  	key_len = hex_decode(otp_params.key, hex, sizeof(hex));
+  	otp_key = hex;
     } else
     if (!strcasecmp(otp_params.encoding, "text")) {
         otp_key = otp_params.key;
@@ -356,15 +362,21 @@ otp_chap_verify(char *name, char *ourname, int id,
     uint8_t mac[EVP_MAX_MD_SIZE];
     unsigned maclen;
 
-    if (!strcasecmp("totp", otp_params.method)) {
+    if (!strncasecmp("totp", otp_params.method, 4)) {
         HMAC_CTX hmac;
         const uint8_t *otp_bytes;
         uint32_t otp, divisor = 1;
-        int range = otp_slop / totp_step;
+        int tstep = totp_step;
+        int tdigits = totp_digits;
+        if (!strcasecmp("totp-60-6", otp_params.method)) {
+            tstep = 60;
+            tdigits = 6;
+        }
+        int range = otp_slop / tstep;
 
-        T = (time(NULL) - totp_t0) / totp_step;
+        T = (time(NULL) - totp_t0) / tstep;
 
-        for (i = 0; i < totp_digits; ++i) {
+        for (i = 0; i < tdigits; ++i) {
             divisor *= 10;
         }
 
@@ -382,7 +394,7 @@ otp_chap_verify(char *name, char *ourname, int id,
             otp %= divisor;
 
             secret_len = snprintf(secret, sizeof(secret),
-                    "%04u%0*u", user_pin, totp_digits, otp);
+                    "%04u%0*u", user_pin, tdigits, otp);
 
             ok = digest->verify_response(id, name, (uint8_t *)secret,
                     secret_len, challenge, response, message, message_space);
