@@ -32,7 +32,7 @@ The plugin supports following options (default values specified):
 The otp-secrets file format is as follows:
 
     # user server type:hash:encoding:key:pin:udid client
-    # where type is totp or motp
+    # where type is totp, totp-60-6 or motp
     #       hash should be sha1 in most cases
     #       encoding is base32, text or text
     #       key is your key in encoding format
