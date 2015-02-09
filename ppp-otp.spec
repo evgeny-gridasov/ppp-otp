@@ -3,8 +3,8 @@
 
 Summary:	PPP OTP authentication support
 Name:		ppp-otp
-Version:	1.0.1
-Release:	2%{?dist}
+Version:	1.0.2
+Release:	1%{?dist}
 License:	None
 Group:		Applications/Internet
 BuildRequires:	ppp-devel, openssl-devel
@@ -38,7 +38,7 @@ install -s -pm 0755 lib/otp.so %{buildroot}%{_libdir}/pppd/%{pppver}/otp.so
 %attr(0755,root,root) %{_libdir}/pppd/%{pppver}/otp.so
 
 %changelog
-* Mon Feb 9 2015 Evgeny Gridasov <evgeny.gridasov@gmail.com> - 1.0.1-2
+* Mon Feb 9 2015 Evgeny Gridasov <evgeny.gridasov@gmail.com> - 1.0.2-1
 - Fixed memory corruption 
 
 * Wed Nov 12 2014 Evgeny Gridasov <evgeny.gridasov@gmail.com> - 1.0.1-1
