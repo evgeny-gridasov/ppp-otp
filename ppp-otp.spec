@@ -9,7 +9,7 @@ License:	None
 Group:		Applications/Internet
 BuildRequires:	ppp-devel, openssl-devel
 URL:		https://github.com/evgeny-gridasov/ppp-otp
-Source0:	https://github.com/evgeny-gridasov/ppp-otp/archive/1.0.1-2.zip
+Source0:	https://github.com/evgeny-gridasov/ppp-otp/archive/1.0.2.zip
 %global pppver %((%{__awk} '/^#define VERSION/ { print $NF }' /usr/include/pppd/patchlevel.h 2>/dev/null||echo none)|/usr/bin/tr -d '"')
 Requires:	ppp = %{pppver}, openssl
 
