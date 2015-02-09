@@ -292,6 +292,7 @@ otp_chap_verify(char *name, char *ourname, int id,
     const EVP_MD *otp_digest;
     EVP_MD_CTX ctx;
     char secret[256];
+    uint8_t decoded_secret[256];
     int i, secret_len;
     int ok = 0;
 
@@ -340,14 +341,12 @@ otp_chap_verify(char *name, char *ourname, int id,
     const void * otp_key;
     
     if (!strcasecmp(otp_params.encoding, "base32")) {
-	uint8_t base32[256];
-        key_len = base32_decode((uint8_t *) otp_params.key, base32, sizeof(base32)); 
-        otp_key = base32;
+        key_len = base32_decode((uint8_t *) otp_params.key, decoded_secret, sizeof(decoded_secret)); 
+        otp_key = decoded_secret;
     } else
     if (!strcasecmp(otp_params.encoding, "hex")) {
-  	uint8_t hex[256];
-  	key_len = hex_decode(otp_params.key, hex, sizeof(hex));
-  	otp_key = hex;
+  	key_len = hex_decode(otp_params.key, decoded_secret, sizeof(decoded_secret));
+  	otp_key = decoded_secret;
     } else
     if (!strcasecmp(otp_params.encoding, "text")) {
         otp_key = otp_params.key;
